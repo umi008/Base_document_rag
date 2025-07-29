@@ -28,4 +28,4 @@ python-docx
 python-dotenv
 PyMuPDF
 pdf2image
-pytesseract
+easyocr
