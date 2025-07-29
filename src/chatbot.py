@@ -4,7 +4,7 @@ from langchain.chains import ConversationalRetrievalChain
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 
 # Cargar el system prompt desde archivo
@@ -12,16 +12,19 @@ def cargar_system_prompt(path="system_prompt.txt"):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-input_prompt = """
-# A continuación se presenta el contexto y la pregunta del usuario, encapsulados en etiquetas claras.
-
-<CONTEXTO>
+# Nuevo prompt que incluye context, chat_history y question en el orden requerido
+custom_human_prompt = """
+<CONTEXT>
 {context}
-</CONTEXTO>
+</CONTEXT>
 
-<PREGUNTA_USUARIO>
+<CHAT_HISTORY>
+{chat_history}
+</CHAT_HISTORY>
+
+<QUESTION>
 {question}
-</PREGUNTA_USUARIO>
+</QUESTION>
 """
 
 def crear_cadena_conversacional(persist_directory="db"):
@@ -64,7 +67,7 @@ def crear_cadena_conversacional(persist_directory="db"):
     # Crear el ChatPromptTemplate con mensaje de sistema y humano
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt_content),
-        ("human", input_prompt)
+        ("human", custom_human_prompt)
     ])
 
     # Crear la cadena conversacional
@@ -73,6 +76,6 @@ def crear_cadena_conversacional(persist_directory="db"):
         retriever=retriever,
         memory=memory,
         verbose=True,
-        #prompt=prompt
+        combine_docs_chain_kwargs={"prompt": prompt}
     )
     return cadena
