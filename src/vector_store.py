@@ -29,7 +29,7 @@ def crear_vector_store(data_dir="data/", persist_directory="db", rebuild=False):
     documentos = cargar_documentos(data_dir)
 
     # 2. Dividir en fragmentos y enriquecer metadatos
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100, separators=["\n\n", "\n", ". ", " ", ""])
     fragmentos = []
     for doc in documentos:
         nombre_archivo = doc.metadata.get("source", "desconocido") if hasattr(doc, "metadata") else "desconocido"

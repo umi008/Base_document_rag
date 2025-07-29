@@ -42,7 +42,7 @@ def cargar_documentos(data_dir="data/"):
                     imagenes = convert_from_path(filepath)
                     texto_ocr = ""
                     for imagen in imagenes:
-                        texto_ocr += pytesseract.image_to_string(imagen, lang='spa')
+                        texto_ocr += pytesseract.image_to_string(imagen, lang='eng')
                     doc.page_content = texto_ocr
             documentos.extend(docs)
         elif filename.lower().endswith(".docx"):
