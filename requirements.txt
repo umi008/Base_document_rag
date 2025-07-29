@@ -1,0 +1,28 @@
+# Framework principal
+langchain
+langchain-community
+langchain-core
+annotated-types
+packaging
+requests
+numpy
+pyasn1
+pyasn1-modules
+cachetools
+requests_toolbelt
+jsonpatch
+PyYAML
+docx2txt
+
+# Integración con Google Gemini
+langchain-google-genai
+
+# Base de datos vectorial
+chromadb
+
+# Lectura de tipos de archivo
+pypdf
+python-docx
+
+# Gestión de variables de entorno
+python-dotenv
