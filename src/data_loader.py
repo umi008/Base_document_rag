@@ -1,6 +1,8 @@
 import os
 import re
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
+import pytesseract
+from pdf2image import convert_from_path
 
 def limpiar_texto(texto: str) -> str:
     """
@@ -31,7 +33,18 @@ def cargar_documentos(data_dir="data/"):
         filepath = os.path.join(data_dir, filename)
         if filename.lower().endswith(".pdf"):
             loader = PyPDFLoader(filepath)
-            documentos.extend(loader.load())
+            docs = loader.load()
+            # Si el PDF no tiene texto extraíble, usar OCR
+            for doc in docs:
+                contenido = doc.page_content or ""
+                if len(contenido.strip()) < 20:
+                    # OCR para PDFs escaneados
+                    imagenes = convert_from_path(filepath)
+                    texto_ocr = ""
+                    for imagen in imagenes:
+                        texto_ocr += pytesseract.image_to_string(imagen, lang='spa')
+                    doc.page_content = texto_ocr
+            documentos.extend(docs)
         elif filename.lower().endswith(".docx"):
             loader = Docx2txtLoader(filepath)
             documentos.extend(loader.load())

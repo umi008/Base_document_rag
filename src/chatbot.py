@@ -47,8 +47,8 @@ def crear_cadena_conversacional(persist_directory="db"):
         search_type="similarity",
         search_kwargs={
             "k": 5,
-            #"lambda_mult": 0.5,
-            #"score_threshold": 0.6
+            #"lambda_mult": 0.5, #for mmr
+            #"score_threshold": 0.6 # for similarity_score_threshold
         }
     )
 

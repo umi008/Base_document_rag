@@ -26,3 +26,6 @@ python-docx
 
 # Gestión de variables de entorno
 python-dotenv
+PyMuPDF
+pdf2image
+pytesseract
