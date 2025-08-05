@@ -48,6 +48,6 @@ def crear_vector_store(data_dir="data/", persist_directory="db", rebuild=False):
         persist_directory=persist_directory
     )
     
-    vector_store.persist()
+
     print(f"Vector store creado en '{persist_directory}' con {len(fragmentos)} fragmentos.")
     return vector_store

@@ -19,13 +19,20 @@ def main():
 
     print("Chatbot RAG iniciado. Escribe 'salir' para terminar.")
 
+    # Usar un ID de sesión fijo para la conversación en la terminal
+    session_id = "terminal_session"
+
     while True:
         pregunta = input("Tú: ")
         if pregunta.lower() == "salir":
             break
 
-        respuesta = cadena_conversacional.invoke({"question": pregunta})
-        print(f"Bot: {respuesta['answer']}")
+        # Invocar la cadena con el ID de sesión en la configuración
+        config = {"configurable": {"session_id": session_id}}
+        respuesta = cadena_conversacional.invoke({"question": pregunta}, config=config)
+        
+        # La nueva cadena devuelve directamente la respuesta como un string
+        print(f"Bot: {respuesta}")
 
 if __name__ == "__main__":
     main()

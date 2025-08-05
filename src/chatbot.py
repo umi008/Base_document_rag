@@ -1,26 +1,35 @@
 import os
-from langchain.memory import ConversationBufferMemory
-from langchain.chains import ConversationalRetrievalChain
+import langchain
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_chroma import Chroma
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from dotenv import load_dotenv
+from langchain_community.chat_message_histories import ChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
+from operator import itemgetter
 
 # Cargar el system prompt desde archivo
 def cargar_system_prompt(path="system_prompt.txt"):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
-# Nuevo prompt que incluye context, chat_history y question en el orden requerido
+# Almacén en memoria para las historias de chat
+store = {}
+
+def get_session_history(session_id: str) -> ChatMessageHistory:
+    """Obtiene o crea un historial de chat para un ID de sesión."""
+    if session_id not in store:
+        store[session_id] = ChatMessageHistory()
+    return store[session_id]
+
+# Prompt actualizado para usar con LCEL y MessagesPlaceholder
 custom_human_prompt = """
 <CONTEXT>
 {context}
 </CONTEXT>
-
-<CHAT_HISTORY>
-{chat_history}
-</CHAT_HISTORY>
 
 <QUESTION>
 {question}
@@ -29,8 +38,9 @@ custom_human_prompt = """
 
 def crear_cadena_conversacional(persist_directory="db"):
     """
-    Crea la cadena de recuperación conversacional.
+    Crea la cadena de recuperación conversacional usando LCEL y RunnableWithMessageHistory.
     """
+
     # Cargar variables de entorno (incluye GOOGLE_API_KEY)
     load_dotenv()
     api_key = os.environ.get("GOOGLE_API_KEY")
@@ -45,17 +55,7 @@ def crear_cadena_conversacional(persist_directory="db"):
     )
     retriever = vector_store.as_retriever(
         search_type="similarity",
-        search_kwargs={
-            "k": 5,
-            #"lambda_mult": 0.5, #for mmr
-            #"score_threshold": 0.6 # for similarity_score_threshold
-        }
-    )
-
-    # Configurar memoria conversacional
-    memory = ConversationBufferMemory(
-        memory_key="chat_history",
-        return_messages=True
+        search_kwargs={"k": 5}
     )
 
     # Inicializar el modelo de lenguaje Gemini
@@ -64,18 +64,33 @@ def crear_cadena_conversacional(persist_directory="db"):
     # Cargar el system prompt
     system_prompt_content = cargar_system_prompt()
 
-    # Crear el ChatPromptTemplate con mensaje de sistema y humano
+    # Crear el ChatPromptTemplate con placeholders para historial y contexto
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt_content),
-        ("human", custom_human_prompt)
+        MessagesPlaceholder(variable_name="chat_history"),
+        ("human", custom_human_prompt),
     ])
 
-    # Crear la cadena conversacional
-    cadena = ConversationalRetrievalChain.from_llm(
-        llm=llm,
-        retriever=retriever,
-        memory=memory,
-        verbose=True,
-        combine_docs_chain_kwargs={"prompt": prompt}
+    def format_docs(docs):
+        """Formatea los documentos recuperados en una sola cadena."""
+        return "\n\n".join(doc.page_content for doc in docs)
+
+    # Construir la cadena RAG principal con LCEL
+    rag_chain = (
+        RunnablePassthrough.assign(
+            context=itemgetter("question") | retriever | format_docs
+        )
+        | prompt
+        | llm
+        | StrOutputParser()
     )
-    return cadena
+
+    # Envolver la cadena con manejo de historial de mensajes
+    conversational_rag_chain = RunnableWithMessageHistory(
+        rag_chain,
+        get_session_history,
+        input_messages_key="question",
+        history_messages_key="chat_history",
+    )
+
+    return conversational_rag_chain
