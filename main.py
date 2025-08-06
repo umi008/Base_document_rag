@@ -11,7 +11,7 @@ def main():
         return
 
     # Crear o actualizar la base de datos vectorial
-    crear_vector_store(data_dir="data/", persist_directory="db", rebuild=True)
+    crear_vector_store(data_dir="data/", persist_directory="db", rebuild=False)
     print("Indexación completada.")
 
     # Crear la cadena conversacional

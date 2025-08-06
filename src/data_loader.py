@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 import easyocr
 import numpy as np
@@ -30,7 +31,7 @@ def cargar_documentos(data_dir="data/"):
         list: Lista de documentos cargados como objetos LangChain Document.
     """
     documentos = []
-    reader = easyocr.Reader(['es', 'en'])
+    reader = easyocr.Reader(['es', 'en'], gpu=True, model_storage_directory="modelos_easyocr", verbose=True)
     for filename in os.listdir(data_dir):
         filepath = os.path.join(data_dir, filename)
         if filename.lower().endswith(".pdf"):
@@ -43,16 +44,24 @@ def cargar_documentos(data_dir="data/"):
                 if len(contenido.strip()) < 20:
                     # OCR para PDFs escaneados
                     print(f"Aplicando OCR a {filename}...")
+                    start_time = time.time()
                     imagenes = convert_from_path(filepath)
                     texto_extraido_lista = []
                     for imagen in imagenes:
                         # Convertir la imagen de PIL a un array de numpy para easyocr
-                        resultado = reader.readtext(np.array(imagen))
+                        resultado = reader.readtext(
+                            np.array(imagen),
+                            batch_size=8,
+                            workers=4
+                                                    )
                         # Unir el texto detectado en la página
                         texto_pagina = " ".join([res[1] for res in resultado])
                         texto_extraido_lista.append(texto_pagina)
                     texto_extraido = "\n".join(texto_extraido_lista)
                     doc.page_content = texto_extraido
+                    end_time = time.time()
+                    elapsed_time = end_time - start_time
+                    print(f"Tiempo total de OCR para {filepath}: {elapsed_time:.2f} segundos")
             documentos.extend(docs)
         elif filename.lower().endswith(".docx"):
             print(f"Cargando archivo DOCX: {filename}")
